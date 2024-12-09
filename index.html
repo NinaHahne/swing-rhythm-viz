@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Swing Dance Tempo Visualizer</title>
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <link rel="stylesheet" href="assets/styles.css">
+</head>
+<body>
+    <h1>Swing Dance Tempo Visualizer</h1>
+    <svg width="800" height="400"></svg>
+
+    <script>
+        // Mock Data
+        const data = [
+            { song: 'Sing Sing Sing', tempo: 220, year: 1936, style: 'Lindy Hop' },
+            { song: 'Shiny Stockings', tempo: 140, year: 1956, style: 'Balboa' },
+            { song: 'Flying Home', tempo: 200, year: 1942, style: 'Lindy Hop' },
+            { song: 'Jive at Five', tempo: 160, year: 1939, style: 'Shag' }
+        ];
+
+        const width = 800;
+        const height = 400;
+        const margin = { top: 20, right: 30, bottom: 50, left: 50 };
+
+        const svg = d3.select('svg')
+            .attr('width', width)
+            .attr('height', height);
+
+        const x = d3.scaleLinear()
+            .domain([1930, 1960])
+            .range([margin.left, width - margin.right]);
+
+        const y = d3.scaleLinear()
+            .domain([0, 240])
+            .range([height - margin.bottom, margin.top]);
+
+        const color = d3.scaleOrdinal()
+            .domain(['Lindy Hop', 'Balboa', 'Shag'])
+            .range(['#1f77b4', '#ff7f0e', '#2ca02c']);
+
+        // Axes
+        svg.append('g')
+            .attr('class', 'axis axis--x')
+            .attr('transform', `translate(0,${height - margin.bottom})`)
+            .call(d3.axisBottom(x).ticks(6).tickFormat(d => d));
+
+        svg.append('g')
+            .attr('class', 'axis axis--y')
+            .attr('transform', `translate(${margin.left},0)`)
+            .call(d3.axisLeft(y).ticks(6));
+
+        // Dots
+        svg.selectAll('.dot')
+            .data(data)
+            .join('circle')
+            .attr('class', 'dot')
+            .attr('cx', d => x(d.year))
+            .attr('cy', d => y(d.tempo))
+            .attr('r', 6)
+            .attr('fill', d => color(d.style))
+            .on('mouseover', (event, d) => {
+                const tooltip = `${d.song} (${d.style}) - ${d.tempo} BPM`;
+                const tooltipDiv = d3.select('body').append('div')
+                    .attr('class', 'tooltip')
+                    .style('position', 'absolute')
+                    .style('background', '#f9f9f9')
+                    .style('border', '1px solid #d3d3d3')
+                    .style('padding', '5px')
+                    .style('border-radius', '3px')
+                    .style('pointer-events', 'none')
+                    .style('opacity', 0);
+
+                tooltipDiv.transition()
+                    .duration(200)
+                    .style('opacity', .9);
+                tooltipDiv.html(tooltip)
+                    .style('left', (event.pageX + 5) + 'px')
+                    .style('top', (event.pageY - 28) + 'px');
+
+            })
+            .on('mouseout', () => {
+                d3.select('.tooltip').remove();
+            });
+    </script>
+</body>
+</html>
