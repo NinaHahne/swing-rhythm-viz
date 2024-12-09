@@ -10,6 +10,9 @@
 <body>
     <h1>Swing Dance Tempo Visualizer</h1>
     <svg width="800" height="400"></svg>
+    <div class="happy-feet">
+        <img draggable="false" src="https://em-content.zobj.net/source/google/412/footprints_1f463.png" alt="happy feet">
+    </div>
 
     <script type="text/javascript">
         // Mock Data
@@ -83,6 +86,12 @@
             .on('mouseout', () => {
                 d3.select('.tooltip').remove();
             });
+            
+        document.addEventListener('mousemove', (event) => {
+            const happyFeet = document.querySelector('.happy-feet');
+            happyFeet.style.left = event.pageX + 'px';
+            happyFeet.style.top = event.pageY + 'px';
+        });
     </script>
 </body>
 </html>
