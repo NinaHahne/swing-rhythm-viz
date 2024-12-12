@@ -10,17 +10,17 @@
 <body>
     <h1>Swing Dance Tempo Visualizer</h1>
     <svg width="800" height="400"></svg>
-    <div class="happy-feet">
+    <!-- <div class="happy-feet">
         <img draggable="false" src="https://em-content.zobj.net/source/google/412/footprints_1f463.png" alt="happy feet">
-    </div>
+    </div> -->
 
     <script type="text/javascript">
         // Mock Data
         const data = [
-            { song: 'Sing Sing Sing', tempo: 220, year: 1936, style: 'Lindy Hop' },
-            { song: 'Shiny Stockings', tempo: 140, year: 1956, style: 'Balboa' },
-            { song: 'Flying Home', tempo: 200, year: 1942, style: 'Lindy Hop' },
-            { song: 'Jive at Five', tempo: 160, year: 1939, style: 'Shag' }
+            { style: 'Blues', tempo: 90 },
+            { style: 'Lindy Hop', tempo: 120 },
+            { style: 'Balboa', tempo: 190 },
+            { style: 'Shag', tempo: 220 },
         ];
 
         const width = 800;
@@ -31,67 +31,110 @@
             .attr('width', width)
             .attr('height', height);
 
-        const x = d3.scaleLinear()
-            .domain([1930, 1960])
-            .range([margin.left, width - margin.right]);
+        const x = d3.scaleBand()
+            .domain(data.map(d => d.style))
+            .range([margin.left, width - margin.right])
+            .padding(0.1);
 
         const y = d3.scaleLinear()
-            .domain([0, 240])
+            .domain([0, d3.max(data, d => d.tempo)])
+            .nice()
             .range([height - margin.bottom, margin.top]);
-
-        const color = d3.scaleOrdinal()
-            .domain(['Lindy Hop', 'Balboa', 'Shag'])
-            .range(['#1f77b4', '#ff7f0e', '#2ca02c']);
 
         // Axes
         svg.append('g')
             .attr('class', 'axis axis--x')
             .attr('transform', `translate(0,${height - margin.bottom})`)
-            .call(d3.axisBottom(x).ticks(6).tickFormat(d => d));
+            .call(d3.axisBottom(x));
 
         svg.append('g')
             .attr('class', 'axis axis--y')
             .attr('transform', `translate(${margin.left},0)`)
-            .call(d3.axisLeft(y).ticks(6));
+            .call(d3.axisLeft(y));
 
-        // Dots
-        svg.selectAll('.dot')
+        // Tooltip
+        const tooltip = d3.select('body')
+            .append('div')
+            .attr('class', 'tooltip');
+
+        // Bars
+        const bars = svg.selectAll('.bar')
             .data(data)
-            .join('circle')
-            .attr('class', 'dot')
-            .attr('cx', d => x(d.year))
-            .attr('cy', d => y(d.tempo))
-            .attr('r', 6)
-            .attr('fill', d => color(d.style))
+            .join('rect')
+            .attr('class', 'bar')
+            .attr('x', d => x(d.style))
+            .attr('y', d => y(d.tempo))
+            .attr('height', d => y(0) - y(d.tempo))
+            .attr('width', x.bandwidth())
             .on('mouseover', (event, d) => {
-                const tooltip = `${d.song} (${d.style}) - ${d.tempo} BPM`;
-                const tooltipDiv = d3.select('body').append('div')
-                    .attr('class', 'tooltip')
-                    .style('position', 'absolute')
-                    .style('background', '#f9f9f9')
-                    .style('border', '1px solid #d3d3d3')
-                    .style('padding', '5px')
-                    .style('border-radius', '3px')
-                    .style('pointer-events', 'none')
-                    .style('opacity', 0);
-
-                tooltipDiv.transition()
+                tooltip.transition()
                     .duration(200)
-                    .style('opacity', .9);
-                tooltipDiv.html(tooltip)
-                    .style('left', (event.pageX + 5) + 'px')
-                    .style('top', (event.pageY - 28) + 'px');
+                    .style('opacity', 0.9);
+                tooltip.html(`${d.style} (${d.tempo} BPM)`)
+                    .style('left', (event.pageX + 10) + 'px')
+                    .style('top', (event.pageY - 20) + 'px');
 
+                startPulsing(d);
             })
             .on('mouseout', () => {
-                d3.select('.tooltip').remove();
+                tooltip.transition()
+                    .duration(500)
+                    .style('opacity', 0);
+                stopPulsing();
             });
-            
-        document.addEventListener('mousemove', (event) => {
-            const happyFeet = document.querySelector('.happy-feet');
-            happyFeet.style.left = event.pageX + 'px';
-            happyFeet.style.top = event.pageY + 'px';
-        });
+
+        // Legend
+        const legend = svg.selectAll('.legend')
+            .data(data)
+            .join('text')
+            .attr('class', 'legend')
+            .attr('x', (d, i) => margin.left + i * 150)
+            .attr('y', height - 10)
+            .attr('fill', 'black')
+            .text(d => `${d.style} (${d.tempo} BPM)`)
+            .on('mouseover', (event, d) => {
+                tooltip.transition()
+                    .duration(200)
+                    .style('opacity', 0.9);
+                tooltip.html(`Tapping ${d.style} (${d.tempo} BPM)`)
+                    .style('left', (event.pageX + 10) + 'px')
+                    .style('top', (event.pageY - 20) + 'px');
+
+                startPulsing(d);
+            })
+            .on('mouseout', () => {
+                tooltip.transition()
+                    .duration(500)
+                    .style('opacity', 0);
+                stopPulsing();
+            });
+
+        // Animation
+        let animationInterval;
+
+        function startPulsing(d) {
+            const bar = bars.filter(b => b.style === d.style);
+
+            const beatInterval = 60000 / d.tempo; // Time per beat in milliseconds
+
+            animationInterval = setInterval(() => {
+                bar.transition()
+                    .duration(beatInterval / 2) // Half duration for shrink
+                    .ease(d3.easeSin)
+                    .attr('y', y(d.tempo) + 20) // Shrink slightly
+                    .attr('height', y(0) - y(d.tempo) - 20) // Adjust height
+                    .transition()
+                    .duration(beatInterval / 2) // Half duration for pop back
+                    .ease(d3.easeSin)
+                    .attr('y', y(d.tempo)) // Restore position
+                    .attr('height', y(0) - y(d.tempo)); // Restore height
+            }, beatInterval); // Repeat at tempo-based intervals
+        }
+
+        function stopPulsing() {
+            clearInterval(animationInterval);
+            bars.transition().interrupt(); // Stop any active transitions
+        }
     </script>
 </body>
 </html>

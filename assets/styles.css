@@ -48,3 +48,18 @@ svg {
 img {
     width: 100%;
 }
+
+.bar {
+    fill: steelblue;
+}
+
+.bar:hover {
+    fill: orange;
+}
+
+.legend {
+    display: none;
+    cursor: pointer;
+    font-size: 14px;
+    /* font-family: Arial, sans-serif; */
+}
