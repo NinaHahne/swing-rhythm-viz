@@ -15,7 +15,7 @@ body {
 }
 
 svg {
-    cursor: none;
+    cursor: pointer;
 }
 
 .dot {
@@ -40,8 +40,8 @@ svg {
     top: 0;
     right: 0;
     width: 40px;
-    transform: translate(-42%, -42%);
-    cursor: none;
+    transition: top 0.5s ease-in-out, left 0.5s ease-in-out;
+    transform: translate(-84%, 42%);
     pointer-events: none;
 }
 
